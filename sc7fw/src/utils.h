@@ -35,5 +35,11 @@
 
 #define ALINLINE        __attribute__((always_inline))
 
+static inline uint32_t read32le(const volatile void *dword, size_t offset) {
+    uintptr_t addr = (uintptr_t)dword + offset;
+    volatile uint32_t *target = (uint32_t *)addr;
+    return *target;
+}
+
 #endif
 

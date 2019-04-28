@@ -16,6 +16,8 @@
 
 #include "utils.h"
 #include "sc7.h"
+#include "i2c.h"
+#include "car.h"
 #include "pmc.h"
 #include "timer.h"
 
@@ -88,6 +90,15 @@ void prelude(void) {
   }
 }
 
+static inline void configure_hiz_mode(void) {
+  clkrst_reboot(CARDEVICE_I2C1);
+
+  i2c_init(0);
+  i2c_clear_ti_charger_bit_7();
+
+  clkrst_disable(CARDEVICE_I2C1);
+}
+
 void sc7_entry_main(void) {
   APBDEV_PMC_DPD_ENABLE_0 = 0;
 
@@ -97,6 +108,8 @@ void sc7_entry_main(void) {
 
   CLK_RST_CONTROLLER_RST_DEV_H_SET_0 = BIT(1);
   CLK_RST_CONTROLLER_CLK_ENB_H_CLR_0 = BIT(1);
+
+  configure_hiz_mode();
 
   volatile struct _params {
     uint32_t phys;
