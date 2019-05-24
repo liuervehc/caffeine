@@ -24,10 +24,10 @@ INCLUDES := include
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH   := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
+ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 
 CFLAGS := \
-	-g \
+  -g \
   -O0 \
   -ffunction-sections \
   -fdata-sections \
@@ -88,7 +88,7 @@ endif
 
 export OFILES_BIN := $(addsuffix .o,$(BINFILES))
 export OFILES_SRC := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES   := $(OFILES_BIN) $(OFILES_SRC)
+export OFILES     := $(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN := $(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \

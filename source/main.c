@@ -1,8 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
-#include <fcntl.h>
 #include <stdalign.h>
 
 #include <sys/stat.h>
@@ -10,7 +7,9 @@
 
 #include <switch.h>
 
-#include "main.h"
+#include "defines.h"
+#include "sc7fw_bin.h"
+#include "rebootstub_bin.h"
 
 #define MODULE_CAFF 207
 
@@ -52,7 +51,6 @@ void __appInit(void) {
     if (R_SUCCEEDED(rc)) {
       hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
     }
-
     setsysExit();
   }
 
@@ -132,8 +130,8 @@ static UNUSED void ahbdma_deinit_hw(void) {
   CLK_RST_CONTROLLER_CLK_ENB_H_CLR_0 = BIT(1);
 }
 
-static void ahbdma_write32(uint32_t phys, uint32_t word) {
-  IRAM(0x3FFDC) = word;
+static void ahbdma_write_reg32(uint32_t phys, uint32_t data) {
+  IRAM(0x3FFDC) = data;
 
   AHBDMACHAN_CHANNEL_0_AHB_SEQ_0 = (2u << 24);
 
@@ -154,7 +152,7 @@ static void ahbdma_write32(uint32_t phys, uint32_t word) {
   }
 }
 
-static UNUSED uint32_t ahbdma_read32(uint32_t phys) {
+static UNUSED uint32_t ahbdma_read_reg32(uint32_t phys) {
   IRAM(0x3FFDC) = 0xCAFEBABE;
 
   AHBDMACHAN_CHANNEL_0_AHB_SEQ_0 = (2u << 24);
@@ -202,7 +200,7 @@ static void ahbdma_race_secmon(uint32_t entry) {
 }
 
 static void execute_on_bpmp(uint32_t entry) {
-  ahbdma_write32(BPMP_VECTOR_RESET, entry);
+  ahbdma_write_reg32(BPMP_VECTOR_RESET, entry);
 
   CLK_RST_CONTROLLER_RST_DEV_L_SET_0 = BIT(1);
   svcSleepThread(2000ull);
@@ -215,10 +213,7 @@ static void execute_on_bpmp(uint32_t entry) {
   }
 }
 
-int main(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
-
+int main(void) {
   Result rc;
 
   query_io_mappings();
@@ -230,15 +225,15 @@ int main(int argc, char **argv) {
   }
 
   struct stat st;
-  if (stat(g_payload_path, &st) < 0) {
+  if ((stat(g_payload_path, &st) != 0) || !S_ISREG(st.st_mode)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  if (st.st_size > sizeof g_payload) {
+  if (!st.st_size || ((uint64_t)st.st_size > sizeof g_payload)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  if (fread(g_payload, 1, st.st_size, f) < st.st_size) {
+  if (fread(g_payload, 1, st.st_size, f) != (size_t)st.st_size) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
@@ -252,8 +247,8 @@ int main(int argc, char **argv) {
   }
 
   struct {
-    uintptr_t phys;
-    uintptr_t base;
+    uintptr_t phys_base;
+    uintptr_t virt_base;
     uintptr_t size;
   } out;
 
@@ -262,8 +257,8 @@ int main(int argc, char **argv) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  uintptr_t phys = out.phys + ((uintptr_t)g_payload - out.base);
-  if (phys > (0x100000000 - st.st_size)) {
+  uintptr_t phys = out.phys_base + ((uintptr_t)g_payload - out.virt_base);
+  if (phys > (0x100000000ull - st.st_size)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
@@ -278,9 +273,6 @@ int main(int argc, char **argv) {
   params->phys = (uint32_t)phys;
   params->size = (uint32_t)st.st_size;
 
-  armDCacheFlush((void *)g_iram_base + 0x3D000, 0x3000);
-
-  ahbdma_write32(MC_SMMU_AVPC_ASID_0, 0);
   execute_on_bpmp(0x4003D008);
 
   BpcSleepButtonState state;
@@ -296,7 +288,5 @@ int main(int argc, char **argv) {
 
   for (;;) {
   }
-
-  return 0;
 }
 

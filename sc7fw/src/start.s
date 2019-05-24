@@ -25,8 +25,8 @@ _start:
 .globl _reboot
   b   reboot
 
-.globl _prelude
-  b   prelude
+.globl _prepare_for_asid_change
+  b   prepare_for_asid_change
 
 .globl _crt0
 .type  _crt0,%function

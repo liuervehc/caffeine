@@ -1,5 +1,4 @@
-#include "sc7fw_bin.h"
-#include "rebootstub_bin.h"
+#include <stdint.h>
 
 #define UNUSED                              __attribute__((unused))
 

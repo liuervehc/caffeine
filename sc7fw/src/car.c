@@ -14,16 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdnoreturn.h>
+
 #include "car.h"
 #include "timer.h"
 #include "utils.h"
 #include "pmc.h"
 
-void __attribute__((noreturn)) generic_panic(void) {
-   APBDEV_PMC_CNTRL_0 = 0x10;
+noreturn void generic_panic(void) {
+    APBDEV_PMC_CNTRL_0 = 0x10;
 
-   for (;;) {
-   }
+    for (;;) {
+    }
 }
 
 static inline uint32_t get_clk_source_reg(CarDevice dev) {
