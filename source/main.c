@@ -234,8 +234,8 @@ int main(void) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  uint8_t *payload = aligned_alloc(0x1000, PAYLOAD_BUF_SIZE);
-  if (!payload) {
+  uint8_t *payload;
+  if (!(payload = aligned_alloc(0x1000, PAYLOAD_BUF_SIZE))) {
     fatalSimple(MAKERESULT(MODULE_CAFF, errno));
   }
 
