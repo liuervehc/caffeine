@@ -124,7 +124,7 @@
                 "svcMapDeviceAddressSpaceByForce": "0x59",
                 "svcMapDeviceAddressSpaceAligned": "0x5A",
                 "svcMapDeviceAddressSpace": "0x5B",
-                "#svcUnmapDeviceAddressSpace": "0x5C",
+                "svcUnmapDeviceAddressSpace": "0x5C",
                 "svcDebugActiveProcess": "0x60",
                 "svcBreakDebugProcess": "0x61",
                 "svcTerminateDebugProcess": "0x62",

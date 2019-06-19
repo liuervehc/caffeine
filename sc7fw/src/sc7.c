@@ -104,12 +104,22 @@ static inline void configure_hiz_mode(void) {
   clkrst_disable(CARDEVICE_I2C1);
 }
 
+static inline void configure_pmic_wake_event(void) {
+  clkrst_reboot(CARDEVICE_I2C5);
+
+  i2c_init(I2C_5);
+  i2c_set_pmic_wk_en0();
+
+  clkrst_disable(CARDEVICE_I2C5);
+}
+
 void sc7_entry_main(void) {
   APBDEV_PMC_DPD_ENABLE_0 = 0;
 
   spinlock_wait(0x128);
-  configure_hiz_mode();
 
+  configure_pmic_wake_event();
+  configure_hiz_mode();
   ahbdma_deinit_hw();
 
   volatile struct _params {

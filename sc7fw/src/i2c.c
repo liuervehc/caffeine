@@ -17,6 +17,7 @@
 #include "i2c.h"
 #include "utils.h"
 #include "timer.h"
+#include "max77620.h"
 
 /* Prototypes for internal commands. */
 volatile tegra_i2c_t *i2c_get_registers_from_id(unsigned int id);
@@ -53,6 +54,14 @@ void i2c_init(unsigned int id) {
     /* Read and set the Interrupt Status. */
     uint32_t int_status = regs->I2C_INTERRUPT_STATUS_REGISTER_0;
     regs->I2C_INTERRUPT_STATUS_REGISTER_0 = int_status;
+}
+
+void i2c_set_pmic_wk_en0(void) {
+    uint32_t val = 0;
+    /* PMIC == Device 4:3C. */
+    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG2, &val, 1);
+    val |= MAX77620_ONOFFCNFG2_WK_EN0;
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG2, &val, 1);
 }
 
 /* Sets a bit in a PMIC register over I2C during CPU shutdown. */

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <stdalign.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -11,11 +12,10 @@
 #include "sc7fw_bin.h"
 #include "rebootstub_bin.h"
 
-#define MODULE_CAFF 207
+#define MODULE_CAFF       207
+#define PAYLOAD_BUF_SIZE  0x20000
 
 static const char *g_payload_path = "sdmc:/atmosphere/reboot_payload.bin";
-
-static uint8_t alignas(0x1000) g_payload[0x20000];
 
 static uintptr_t g_iram_base;
 static uintptr_t g_clk_rst_base;
@@ -213,6 +213,7 @@ static void execute_on_bpmp(uint32_t entry) {
   }
 }
 
+
 int main(void) {
   Result rc;
 
@@ -229,19 +230,24 @@ int main(void) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  if (!st.st_size || ((uint64_t)st.st_size > sizeof g_payload)) {
+  if (!st.st_size || ((uint64_t)st.st_size > PAYLOAD_BUF_SIZE)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  if (fread(g_payload, 1, st.st_size, f) != (size_t)st.st_size) {
+  uint8_t *payload = aligned_alloc(0x1000, PAYLOAD_BUF_SIZE);
+  if (!payload) {
+    fatalSimple(MAKERESULT(MODULE_CAFF, errno));
+  }
+
+  if (fread(payload, 1, st.st_size, f) != (size_t)st.st_size) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
   fclose(f);
 
-  armDCacheFlush(g_payload, sizeof g_payload);
+  armDCacheFlush(payload, PAYLOAD_BUF_SIZE);
 
-  rc = svcSetMemoryAttribute(g_payload, sizeof g_payload, 8, 8);
+  rc = svcSetMemoryAttribute(payload, PAYLOAD_BUF_SIZE, 8, 8);
   if (R_FAILED(rc)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
@@ -252,12 +258,12 @@ int main(void) {
     uintptr_t size;
   } out;
 
-  rc = svcQueryPhysicalAddress((uint64_t *)&out, (uintptr_t)g_payload);
+  rc = svcQueryPhysicalAddress((uint64_t *)&out, (uintptr_t)payload);
   if (R_FAILED(rc)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  uintptr_t phys = out.phys_base + ((uintptr_t)g_payload - out.virt_base);
+  uintptr_t phys = out.phys_base + ((uintptr_t)payload - out.virt_base);
   if (phys > (0x100000000ull - st.st_size)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }

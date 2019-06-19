@@ -93,6 +93,7 @@ void i2c_init(unsigned int id);
 bool i2c_query(unsigned int id, uint8_t device, uint8_t r, void *dst, size_t dst_size);
 bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_size);
 
+void i2c_set_pmic_wk_en0(void);
 void i2c_send_pmic_cpu_shutdown_cmd(void);
 bool i2c_query_ti_charger_bit_7(void);
 void i2c_clear_ti_charger_bit_7(void);
