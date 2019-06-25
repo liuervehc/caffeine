@@ -4,7 +4,7 @@ OUTPUT_ARCH(arm)
 ENTRY(_start)
 SECTIONS
 {
-    . = 0x4003F000;
+    . = 0x40038800;
 
     __start__ = ABSOLUTE(.);
 

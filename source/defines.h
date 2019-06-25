@@ -87,9 +87,12 @@
 #define MC_SMMU_AVPC_ASID_0                 (MC_BASE + 0x23C)
 #define MC_SMMU_PPCS_ASID_0                 (MC_BASE + 0x270)
 
-#define COPY_TO_IRAM(d,s,n)                           \
-  for (unsigned int i = 0; i < (n); i += 4) {         \
-    uint32_t tmp = *(uint32_t *)((uintptr_t)(s) + i); \
-    IRAM((d) + i) = tmp;                              \
+#define ALIGN_UP(v,a) \
+  (((v) + (a) - 1) & (~((a) - 1)))
+
+#define COPY_TO_IRAM(d,s,n)                                \
+  for (unsigned int i = 0; i < ALIGN_UP((n), 4); i += 4) { \
+    uint32_t tmp = *(uint32_t *)((uintptr_t)(s) + i);      \
+    IRAM((d) + i) = tmp;                                   \
   }
 
