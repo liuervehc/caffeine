@@ -21,16 +21,62 @@
 #include "pmc.h"
 #include "car.h"
 #include "i2c.h"
-#include "timer.h"
-#include "utils.h"
 
-#define AVP_CACHE_CONFIG_0  MAKE_REG32((uintptr_t)0x50040000)
+#define AVP_CACHE_CONFIG_0              MAKE_REG32((uintptr_t)0x50040000)
+
+#define MAKE_AHBDMA_REG(r)              (MAKE_REG32(((uintptr_t)0x60008000) + (r)))
+
+#define AHBDMA_CMD_0                    MAKE_AHBDMA_REG(0x000)
+#define AHBDMA_STA_0                    MAKE_AHBDMA_REG(0x004)
+
+#define MAKE_AHBDMACHAN_n_REG(n,r)      (MAKE_REG32(((uintptr_t)0x60009000) + \
+                                        (0x20 * (n)) + (r)))
+
+#define AHBDMACHAN_CHANNEL_0_CSR_0      MAKE_AHBDMACHAN_n_REG(0 ,0x000)
+#define AHBDMACHAN_CHANNEL_0_AHB_PTR_0  MAKE_AHBDMACHAN_n_REG(0, 0x010)
+#define AHBDMACHAN_CHANNEL_0_AHB_SEQ_0  MAKE_AHBDMACHAN_n_REG(0, 0x014)
+#define AHBDMACHAN_CHANNEL_0_XMB_PTR_0  MAKE_AHBDMACHAN_n_REG(0, 0x018)
+
+#define AHBDMACHAN_CHANNEL_1_CSR_0      MAKE_AHBDMACHAN_n_REG(1, 0x000)
+#define AHBDMACHAN_CHANNEL_1_AHB_PTR_0  MAKE_AHBDMACHAN_n_REG(1, 0x010)
+#define AHBDMACHAN_CHANNEL_1_AHB_SEQ_0  MAKE_AHBDMACHAN_n_REG(1, 0x014)
+#define AHBDMACHAN_CHANNEL_1_XMB_PTR_0  MAKE_AHBDMACHAN_n_REG(1, 0x018)
+
+#define AHBDMACHAN_CHANNEL_2_CSR_0      MAKE_AHBDMACHAN_n_REG(2 ,0x000)
+#define AHBDMACHAN_CHANNEL_3_CSR_0      MAKE_AHBDMACHAN_n_REG(3, 0x000)
 
 noreturn void reboot(void) {
   APBDEV_PMC_CNTRL_0 = 0x10;
 
   for (;;) {
   }
+}
+
+static inline void ahbdma_copy_payload_to_iram(void) {
+  AHBDMACHAN_CHANNEL_0_CSR_0 = 0;
+  AHBDMACHAN_CHANNEL_1_CSR_0 = 0;
+  AHBDMACHAN_CHANNEL_2_CSR_0 = 0;
+  AHBDMACHAN_CHANNEL_3_CSR_0 = 0;
+
+  while (AHBDMA_STA_0 & (0xFu << 24)) {
+  }
+
+  AHBDMACHAN_CHANNEL_0_AHB_PTR_0 = 0x40010000;
+  AHBDMACHAN_CHANNEL_0_AHB_SEQ_0 = 0x02000000;
+  AHBDMACHAN_CHANNEL_0_XMB_PTR_0 = 0x80000000;
+
+  AHBDMACHAN_CHANNEL_0_CSR_0 = BIT(31) | BIT(26) | (0x3FFFu << 2);
+
+  AHBDMACHAN_CHANNEL_1_AHB_PTR_0 = 0x40020000;
+  AHBDMACHAN_CHANNEL_1_AHB_SEQ_0 = 0x02000000;
+  AHBDMACHAN_CHANNEL_1_XMB_PTR_0 = 0x80010000;
+
+  AHBDMACHAN_CHANNEL_1_CSR_0 = BIT(31) | BIT(26) | (0x3FFFu << 2);
+
+  while (AHBDMA_STA_0 & (0x3u << 24)) {
+  }
+
+  AHBDMA_CMD_0 &= ~BIT(31);
 }
 
 static inline void configure_hiz_mode(void) {
@@ -54,9 +100,10 @@ static inline void configure_pmic_wake_event(void) {
 void sc7_entry_main(void) {
   AVP_CACHE_CONFIG_0 |= 0xC00;
 
-  /* FIXME: determine that our payload is in place rather than stupidly waiting */
-  /* if your display remains blank, try adjusting this value */
-  spinlock_wait(0x1000000);
+  while (APBDEV_PMC_PWRGATE_STATUS_0 & 1) {
+  }
+
+  ahbdma_copy_payload_to_iram();
 
   configure_pmic_wake_event();
   configure_hiz_mode();

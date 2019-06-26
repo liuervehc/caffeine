@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdalign.h>
-#include <stdlib.h>
-#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -116,7 +114,7 @@ static inline void query_io_mappings(void) {
 }
 
 static inline void ahbdma_global_enable(void) {
-  AHBDMA_CMD_0 = BIT(31);
+  AHBDMA_CMD_0 |= BIT(31);
 }
 
 static inline void ahbdma_global_disable(void) {
@@ -191,21 +189,14 @@ static UNUSED uint32_t ahbdma_read_reg32(uint32_t phys) {
 }
 
 static void ahbdma_prepare_for_sleep(void) {
-  AHBDMACHAN_CHANNEL_0_AHB_PTR_0 = 0x40010000;
-  AHBDMACHAN_CHANNEL_0_AHB_SEQ_0 = 0x02000000;
-  AHBDMACHAN_CHANNEL_0_XMB_PTR_0 = 0x80000000;
-
-  AHBDMACHAN_CHANNEL_0_CSR_0 = BIT(31) | (0x3FFFul << 2);
-
-  AHBDMACHAN_CHANNEL_1_AHB_PTR_0 = 0x40020000;
-  AHBDMACHAN_CHANNEL_1_AHB_SEQ_0 = 0x02000000;
-  AHBDMACHAN_CHANNEL_1_XMB_PTR_0 = 0x80010000;
-
-  AHBDMACHAN_CHANNEL_1_CSR_0 = BIT(31) | (0x3FFFul << 2);
-
-  for (unsigned int i = 0; i < 8; ++i) {
-    g_device_pages[(0x20000 >> 2) + i] = 0x40038000;
-  }
+  g_device_pages[0x8000] = 0x40038000;
+  g_device_pages[0x8004] = 0x40038000;
+  g_device_pages[0x8008] = 0x40038000;
+  g_device_pages[0x800C] = 0x40038000;
+  g_device_pages[0x8010] = 0x40038000;
+  g_device_pages[0x8014] = 0x40038000;
+  g_device_pages[0x8018] = 0x40038000;
+  g_device_pages[0x801C] = 0x40038000;
 
   AHBDMACHAN_CHANNEL_2_AHB_PTR_0 = BPMP_VECTOR_RESET;
   AHBDMACHAN_CHANNEL_2_AHB_SEQ_0 = 0x02000000;
