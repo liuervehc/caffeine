@@ -16,7 +16,7 @@
 
 static const char *g_payload_path = "sdmc:/atmosphere/reboot_payload.bin";
 
-static uint32_t alignas(0x1000) g_device_pages[0x8400];
+static uint32_t alignas(0x1000) g_device_pages[0x9400];
 
 static uintptr_t g_iram_base;
 static uintptr_t g_clk_rst_base;
@@ -189,18 +189,18 @@ static UNUSED uint32_t ahbdma_read_reg32(uint32_t phys) {
 }
 
 static void ahbdma_prepare_for_sleep(void) {
-  g_device_pages[0x8000] = 0x40038000;
-  g_device_pages[0x8004] = 0x40038000;
-  g_device_pages[0x8008] = 0x40038000;
-  g_device_pages[0x800C] = 0x40038000;
-  g_device_pages[0x8010] = 0x40038000;
-  g_device_pages[0x8014] = 0x40038000;
-  g_device_pages[0x8018] = 0x40038000;
-  g_device_pages[0x801C] = 0x40038000;
+  g_device_pages[0x9000] = 0x40038000;
+  g_device_pages[0x9004] = 0x40038000;
+  g_device_pages[0x9008] = 0x40038000;
+  g_device_pages[0x900C] = 0x40038000;
+  g_device_pages[0x9010] = 0x40038000;
+  g_device_pages[0x9014] = 0x40038000;
+  g_device_pages[0x9018] = 0x40038000;
+  g_device_pages[0x901C] = 0x40038000;
 
   AHBDMACHAN_CHANNEL_2_AHB_PTR_0 = BPMP_VECTOR_RESET;
   AHBDMACHAN_CHANNEL_2_AHB_SEQ_0 = 0x02000000;
-  AHBDMACHAN_CHANNEL_2_XMB_PTR_0 = 0x80020000;
+  AHBDMACHAN_CHANNEL_2_XMB_PTR_0 = 0x80024000;
 
   AHBDMACHAN_CHANNEL_2_CSR_0 = BIT(31) | (7ul << 2);
 }
@@ -235,7 +235,7 @@ int main(void) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
-  if (!st.st_size || ((uint64_t)st.st_size > 0x20000)) {
+  if (!st.st_size || ((uint64_t)st.st_size > 0x24000)) {
     fatalSimple(MAKERESULT(MODULE_CAFF, __LINE__));
   }
 
